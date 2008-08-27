@@ -1,0 +1,8 @@
+doc/*.html
+*.beam
+.DS_Store
+.gitignore
+*~
+doc/edoc-info
+doc/erlang.png
+doc/stylesheet.css
