@@ -12,117 +12,174 @@
 
 -import(lists).
 -import(string).
+-import(proplists).
 
 %% API
--export([route/3
+-export([route/2
+         ,generate/3
          ,generate/4]).
 
-%% @type routes() = [route()].
+%% @type routes() = [route(),...].
 %% A list of routes.
-%% @type route() = {Method, [path_spec()], controller()}
-%%       Method = any | atom().
+%% @type route() = {[match_spec(),...], controller(), Options::proplist()}.
 %% A single route specification.
 %%
-%% Method can be any to match any HTTP method, or the atom of the
-%% exact HTTP method (e.g. 'GET').
-%% @type path_spec() = {exact, path_components()} | path_components().
-%% A path specification - either an exact list of path components or a prefix list.
+%% @type controller() = Module::atom().
+%% A controller module name.
 %%
-%% An exact path matches only if RoutePath =:= RequestPath.
-%% A prefix path matches for lists:prefix(RoutePath, RequestPath) =:= true.
+%% @type match_spec() = [match_term(),...].
+%% A match specification - a list of match terms to compare against
+%% URL path components.
 %%
-%% The leading "/" component isn't included in the route path specification.
-%% @type controller() = Module::atom() | {page, Module::atom()}.
-%% A controller module that will respond to either Module:render/0 for
-%% {page, Module} or Module:serve_path(Method::atom(),
-%% Path::[string()], Request::mochiweb_request()) for the plain
-%% Module::atom form.
-%% @type path_components() = [string()].
-%% A list of URL path components (without "/" characters).
+%% @type match_term() = string() | '*' | atom() | {'*', Var::term}.
+%% A term to match against URL path components.
 %%
-%% string:tokens(Path, "/") ==> path().
+%% Strings must match exactly in the same position. Atoms consume one
+%% URL component and produce a variable binding of {Atom,
+%% Component}. '*' and {'*', Var} consumes the remaining path (zero or
+%% more path components) and can only appear as the last match_term()
+%% in a match_spec(). {'*', Var} produces a variable binding of {Var,
+%% RemainingPathComponents}.
+%%
+%% @type path() = [string(),...].
+%% A list of URL path components. path() == string:tokens(PathString, "/").
 
 %%====================================================================
 %% API
 %%====================================================================
 
-%% @private
-route(Method, Path) ->
-    route(Method, tl(Path), test_routes()).
-
-%% @spec route(Method::atom(), path_components(), routes()) -> Result
+%% @spec route(path_components(), routes()) -> Result
 %%  Result = fail | not_found | controller()
-route(Method, Path, [{RMethod, Paths, Controller}|Rest])
-  when RMethod =:= any; RMethod =:= Method ->
-    route_path(Method, Path, Paths, Controller, Rest);
-route(Method, Path, [_Route|Rest]) ->
-    route(Method, Path, Rest);
-route(Method, _Path, []) when Method =:= 'GET'; Method =:= 'HEAD' ->
-    not_found;
-route(_Method, _Path, []) ->
-    fail.
 
-route_path(Method, Path, [], _Controller, Rest) ->
-    route(Method, Path, Rest);
-route_path(_Method, Path, [{exact, Path}|_Paths], Controller, _Rest) ->
-    Controller;
-route_path(Method, Path, [{exact, _OtherPath}|Paths], Controller, Rest) ->
-    route_path(Method, Path, Paths, Controller, Rest);
-route_path(Method, Path, [RPath|Paths], Controller, Rest) ->
-    case lists:prefix(RPath, Path) of
-        true -> Controller;
-        false -> route_path(Method, Path, Paths, Controller, Rest)
+route(_Path, []) ->
+    not_found;
+route(Path, [Route | Rest]) ->
+    case match(Path, Route) of
+        not_found -> route(Path, Rest);
+        Else -> Else
     end.
 
-%% @private
-%% @spec generate(controller(), Extra_Path::path_components()) -> URL::string()
-generate(Controller, Components) ->
-    generate(test_url(), Controller, Components, test_routes()).
+match(_Path, []) ->
+    not_found;
+match(_Path, {[], _Mod, _Options}) ->
+    not_found;
+match(Path, {[Pattern|Rest], Mod, Options}) ->
+    case match_pattern(Path, Pattern, []) of
+        {match, Vars} ->
+            {Mod, Options, Vars};
+        not_found ->
+            match(Path, {Rest, Mod, Options})
+    end.
+
+match_pattern([], [], Vars) ->
+    {match, Vars};
+match_pattern([String | Rest], [String | Pattern], Vars) when is_list(String) ->
+    match_pattern(Rest, Pattern, Vars);
+match_pattern(_Path, ['*'], Vars) ->
+    {match, Vars};
+match_pattern(Path, [{'*', Var}], Vars) ->
+    {match, [{Var,Path} | Vars]};
+match_pattern([String | Rest], [Var | Pattern], Vars) when is_atom(Var) ->
+    match_pattern(Rest, Pattern, [{Var, String} | Vars]);
+
+match_pattern(_Path, _Pattern, _Vars) ->
+    not_found.
+
+generate(Controller, Vars, Routes) ->
+    generate(none, Controller, Vars, Routes).
 %% @spec generate(BaseURL::string(), controller(), path_components(), routes()) -> URL::string()
-generate(BaseUrl, Controller, Components, Routes) ->
-    case lists:keysearch(Controller, 3, Routes) of
-        {value, {_, Paths, _Controler}} ->
-            C = case hd(Paths) of
-                    [] -> [BaseUrl | Components];
-                    {exact, []} -> [BaseUrl | Components];
-                    {exact, Path} -> [BaseUrl, Path | Components];
-                    Path -> [BaseUrl | Path] ++ Components
-                end,
-            string:join(C, "/");
+generate(BaseUrl, Controller, Vars, Routes) ->
+    case lists:keysearch(Controller, 2, Routes) of
+        {value, {MatchSpecs, _Controler, _Options}} when is_list(BaseUrl) ->
+            string:join([BaseUrl | generate_path(Vars, hd(MatchSpecs))], "/");
+        {value, {MatchSpecs, _Controler, _Options}} when BaseUrl =:= none ->
+            string:join(generate_path(Vars, hd(MatchSpecs)), "/");
         false ->
             erlang:error({no_route, Controller})
     end.
+
+generate_path(_Vars, []) -> [];
+generate_path(_Vars, ['*']) -> [];
+generate_path(Vars, [{'*', Var}]) -> proplists:get_value(Var, Vars,[]);
+generate_path(Vars, [Var|Rest]) when is_atom(Var) ->
+    [case proplists:get_value(Var, Vars) of
+         undefined -> erlang:error({missing_var, Var});
+         Val -> Val
+     end | generate_path(Vars, Rest)];
+generate_path(Vars, [String|Rest]) when is_list(String) ->
+    [String | generate_path(Vars, Rest)].
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-route_test() ->
-    ?assertMatch({page, vhreg_welcome},
-                 route('GET', ["/", "welcome"])),
-    ?assertMatch({page, vhreg_welcome},
-                 route('GET', ["/", "welcome", "foo"])),
-    ?assertMatch(vhreg_web_account,
-                 route('GET', ["/", "account", "new"])),
-    ?assertMatch(not_found,
-                 route('GET', ["/", "fooz"])),
-    ?assertMatch(fail,
-                 route('POST', ["/", "fooz"])).
+route_1_test() ->
+    ?assertMatch({test_web_account, [], []},
+                 test_route(["test"])).
+generate_1_test() ->
+    ?assertMatch("test",
+                 test_generate(test_web_account,[])).
 
-generate_test() ->
-    ?assertMatch("http://bete.ran:8000/foo",
-                 generate({page, vhreg_welcome}, ["foo"])),
-    ?assertMatch("http://bete.ran:8000/account/confirm/foo/bar",
-                 generate(vhreg_web_confirm, ["foo", "bar"])).
+route_2_test() ->
+    ?assertMatch({test_web_account, [], []},
+                 test_route(["test2"])).
+route_3_test() ->
+    ?assertMatch({test_web_account, [], []},
+                 test_route(["test2", "foozbag"])).
+route_4_test() ->
+    ?assertMatch({test_web_account, [], [{post_path, ["foozbag"]}]},
+                 test_route(["test3", "foozbag"])).
+route_5_test() ->
+    ?assertMatch(not_found,
+                 test_route(["foozbag"])).
+route_6_test() ->
+    ?assertMatch({test_web_confirm, [], [{token, "98475932846572396"}]},
+                 test_route(["account", "confirm", "98475932846572396"])).
+generate_6_test() ->
+    ?assertMatch("account/confirm/98475932846572396",
+                 test_generate(test_web_confirm, [{token, "98475932846572396"}])).
+
+route_7_test() ->
+    ?assertMatch(not_found,
+                 test_route(["account", "confirm", "984759328", "46572396"])).
+route_8_test() ->
+    ?assertMatch({test_web_setup, [], []},
+                 test_route(["get_setup"])).
+route_9_test() ->
+    ?assertMatch({page, [{name,"welcome"}], []},
+                 test_route([])).
+route_10_test() ->
+    ?assertMatch({page, [{name,"welcome"}], []},
+                 test_route(["welcome"])).
+
+generate_11_test() ->
+    ?assertMatch("post_path/foo/bar",
+                 test_generate(test_post_path, [{post_path, ["foo","bar"]}])).
+
+generate_12_test() ->
+    ?assertMatch("http://localhost:8000/test",
+                 generate("http://localhost:8000",test_web_account,[], test_routes())).
+
+
+test_route(Path) ->
+    route(Path, test_routes()).
+
+test_generate(Controller, Vars) ->
+    generate(none, Controller, Vars, test_routes()).
+
+test_generate(Base, Controller, Vars) ->
+    generate(Base, Controller, Vars, test_routes()).
 
 test_routes() ->
-    [{any, [["get_started"],
-            ["account", "new"]], vhreg_web_account},
-     {any, [["account", "confirm"]], vhreg_web_confirm},
-     {any, [["get_setup"]], vhreg_web_setup},
-     {any, [["login"]], vhreg_web_login},
-     {any, [{exact, []}, ["welcome"]], {page, vhreg_welcome}}
+    [{[["test"],
+       ["test2", '*'],
+       ["test3", {'*', post_path}]], test_web_account, []},
+     {[["account", "confirm", token]], test_web_confirm, []},
+     {[["get_setup"]], test_web_setup, []},
+     {[["login"]], test_web_login, []},
+     {[["post_path", {'*', post_path}]], test_post_path, []},
+     {[[], ["welcome"]], page, [{name, "welcome"}]}
     ].
 
 test_url() ->
-    "http://bete.ran:8000".
+    "http://localhost:8000".
