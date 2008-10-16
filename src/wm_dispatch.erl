@@ -20,13 +20,16 @@
 -author('Justin Sheehy <justin@basho.com>').
 -author('Andy Gross <andy@basho.com>').
 -author('Geoff Cant <nem@erlang.geek.nz>').
--export([handle_request/3]).
+-export([handle_request/3, cb/1]).
 
--record(cb, {module}).
--record(state, {}).
+-import(sets).
+-import(dict).
+-import(lists).
 
-new(Module) ->
-    #cb{module=Module}.
+-record(state, {req,cb,rp,mod_state}).
+
+%#dispatch(Req, CB = #cb{}) ->
+%   decision(v3b13, #state{cb=CB,req=Req}).
 
 respond(Code, Headers) ->
     wrcall({add_response_headers, Headers}),
@@ -59,6 +62,15 @@ decision_flow({ErrCode, Reason}, _TestResult) when is_integer(ErrCode) ->
 resource_call(Fun) ->
     webmachine_resource:do(Fun, get()).
 
+resource_call(Fun, S = #state{rp=RP,mod_state=MS,cb=CB}) ->
+    case dict:fetch(Fun, CB) of
+        Fun when is_function(Fun, 2) ->
+            {Result, NewMS} = Fun(RP, MS),
+            {Result, S#state{mod_state=NewMS}};
+        Value ->
+            {Value, S}
+    end.
+
 wrcall(_) -> erlang:error(not_implemented).
 respond(_) -> erlang:error(not_implemented).
 method() -> erlang:error(not_implemented).
@@ -66,9 +78,9 @@ get_header_val(_) -> erlang:error(not_implemented).
 handle_request(_,_,_) -> erlang:error(not_implemented).
 
 %% "Service Available"
-decision(v3b13) ->	
+decision(v3b13) ->
     decision_test(resource_call(ping), pong, v3b13b, 503);
-decision(v3b13b) ->	
+decision(v3b13b) ->
     decision_test(resource_call(service_available), true, v3b12, 503);
 %% "Known method?"
 decision(v3b12) ->
@@ -413,3 +425,49 @@ accept_helper() ->
         _ -> respond(500)
     end.
 
+
+cb(Module) ->
+    Exports = sets:from_list([Call || {Call,2} <- Module:module_info(exports)]),
+    Calls = dict:from_list(defaults()),
+    CSet = sets:from_list([Call || {Call, _} <- defaults()]),
+    Implemented = sets:intersection([Exports, CSet]),
+    ImplFuns = [{Call, fun (ReqProps, ModState) -> Module:Call(ReqProps,ModState) end}
+                || Call <- sets:to_list(Implemented)],
+    D = dict:from_list(ImplFuns),
+    dict:merge(fun (_Key, _V1, Fun) -> Fun end, Calls, D).
+
+defaults() ->
+    [{ping, no_default}
+     ,{service_available, true}
+     ,{resource_exists, true}
+     ,{auth_required, true}
+     ,{is_authorized, true}
+     ,{forbidden, false}
+     ,{allow_missing_post, false}
+     ,{malformed_request, false}
+     ,{uri_too_long, false}
+     ,{known_content_type, true}
+     ,{valid_content_headers, true}
+     ,{valid_entity_length, true}
+     ,{options, []}
+     ,{allowed_methods, ['GET', 'HEAD']}
+     ,{known_methods, ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'CONNECT', 'OPTIONS']}
+     ,{content_types_provided, [{"text/html", to_html}]}
+     ,{content_types_accepted, []}
+     ,{delete_resource, false}
+     ,{delete_completed, true}
+     ,{post_is_create, false}
+     ,{create_path, undefined}
+     ,{process_post, false}
+     ,{language_available, true}
+     ,{charset_available, true}
+     ,{encoding_available, true}
+     ,{is_conflict, false}
+     ,{multiple_choices, false}
+     ,{previously_existed, false}
+     ,{moved_permanently, false}
+     ,{moved_temporarily, false}
+     ,{last_modified, undefined}
+     ,{expires, undefined}
+     ,{generate_etag, undefined}
+     ,{finish_request, true}].
