@@ -28,6 +28,8 @@
          delete/2,
          consume/2]).
 
+-export([field_validation/1]).
+
 -record(email_token, {token
                       ,data
                       ,issued
@@ -173,6 +175,13 @@ tohex(A)->
 %% @end
 padhex([C]) -> [$0, C];
 padhex(String) -> String.
+
+%% @spec field_validation(token) -> list()
+%% @doc returns the ejango.form_validator validation predicates for
+%%      token values.
+%% @end
+field_validation(token) ->
+    [{regex, "^[a-f0-9]{40}$"}].
 
 %%====================================================================
 %% Unit tests
