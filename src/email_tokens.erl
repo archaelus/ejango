@@ -2,7 +2,8 @@
 %% @copyright Geoff Cant
 %% @author Geoff Cant <nem@erlang.geek.nz>
 %% @version {@vsn}, {@date} {@time}
-%% @doc Library of utilities to implement action confirmation via email tokens
+%% @doc Library of utilities to implement action confirmation via
+%% email tokens
 %% @end
 %%%-------------------------------------------------------------------
 -module(ejango.email_tokens).
