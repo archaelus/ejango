@@ -26,6 +26,7 @@
          password/3,
          submit/1,
          validate/2,
+         validate_field/3,
          valid_fields/3,
          valid_post/2,
          rules/1]).
@@ -81,6 +82,13 @@ rules(#form{fields=Fields, rules=FormRules}) ->
      || #field{type=Type,name=Name,rules=Rules} <- Fields,
         Type =/= submit]
         ++ FormRules.
+
+validate_field(Form, Field, Data) ->
+     case proplists:get_value(Field, rules(Form)) of
+         undefined -> erlang:error({no_such_rule, Field});
+         List when is_list(List) ->
+             form_validator:validate_rule({Field, List}, Data)
+     end.
 
 valid_fields(F, Result, Data) ->
     Simple = simple_copy(Result, Data),
