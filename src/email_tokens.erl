@@ -16,6 +16,7 @@
 -import(lists).
 -import(httpd_util).
 -import(string).
+-import(ejango.tokens).
 
 %% API
 -export([create_token/1,
@@ -145,38 +146,8 @@ consume(mnesia, {TokenID, Period}) ->
 %% @doc Creates a new unique token id - ascii hex of sha1({node,self,ref,now}).
 %% @end
 token_id() ->
-    shahex(term_to_binary({node(), self(), make_ref(), erlang:now()})).
+    tokens:id().
     
-%% @spec shahex(Cleartext::binary()) -> string()
-%% @doc Returns the ascii hex of the sha1 sum of a given binary.
-%% @end
-shahex(Clear) ->
-    ShaVal= case catch crypto:sha(Clear) of 
-                {'EXIT',_} ->
-                    crypto:start(),
-                    crypto:sha(Clear);
-                Sha -> Sha
-            end,
-    tohex(binary_to_list(ShaVal)).
-
-%% @spec tohex([integer()]) -> string()
-%% @doc convert a list of integers to an ascii hexadecimal string
-%% @end
-tohex(A)->
-    Fun = fun(X)->
-                  string:to_lower(padhex(httpd_util:integer_to_hexlist(X)))
-          end,
-    lists:flatmap(Fun, A).
-
-
-%% @spec padhex(string()) -> string()
-%% @doc because httpd_util:integer_to_hexlist/1 returns hex
-%%      tokens &lt;10 as only 1 character, ie. "0F" is simply returned as
-%%      "F". For our digest, we need these leading zeros to be present.
-%% @end
-padhex([C]) -> [$0, C];
-padhex(String) -> String.
-
 %% @spec field_validation(token) -> list()
 %% @doc returns the ejango.form_validator validation predicates for
 %%      token values.
@@ -187,18 +158,6 @@ field_validation(token) ->
 %%====================================================================
 %% Unit tests
 %%====================================================================
-
-% @private
-token_id_test() ->
-    ?assert(case token_id() of
-                X when is_list(X), length(X) == 40 -> true;
-                _ -> false
-            end),
-    ?assert(lists:all(fun (C) when $a =< C, C =< $f;
-                                   $0 =< C, C =< $9 ->
-                              true;
-                          (_) -> false
-                      end, token_id())).
 
 % @private
 create_token_test() ->
