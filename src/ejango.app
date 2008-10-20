@@ -8,6 +8,8 @@
              ,ejango.form
              ,ejango.form_validator
              ,ejango.passwords
+             ,ejango.tokens
              ,ejango.url_routes
+             ,ejango.wm_dispatch
              ]}
  ]}.
