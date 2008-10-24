@@ -1,0 +1,10 @@
+<form action="{{ form_action }}" method="post">
+  <fieldset>
+    <legend>{{ form_title }}</legend>
+    {% for field in fields %}
+    <div>
+    {{ field }}
+    </div>
+    {% endfor %}
+  </fieldset>
+</form>

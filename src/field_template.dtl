@@ -1,0 +1,6 @@
+{% block preamble %}{% endblock %}
+<span><input type="{{ type }}" name="{{ name }}"
+             title="{{ description }}" id="{{ name }}"
+             {% if size %}size="{{ size }}"{% else %}size="20"{% endif %}
+             {% if value %}value="{{ value }}"{% endif %}
+             /></span>
