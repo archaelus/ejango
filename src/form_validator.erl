@@ -23,6 +23,7 @@
          ,field_errors/2
          ,errors/1
          ,valid_fields/2
+         ,validate_rule/2
          ,rule_fields/1]).
 
 %%====================================================================
@@ -62,10 +63,6 @@ valid_fields(Results, Data) ->
     [ {K,V} || {K,V} <- Data,
                lists:member(K, Fields) ].
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
 validate_rule({Name, Predicates}, Data) when is_list(Name), is_list(Predicates) ->
     {Name,
      lists:flatmap(fun (Predicate) ->
@@ -75,6 +72,10 @@ validate_rule({Name, Predicates}, Data) when is_list(Name), is_list(Predicates) 
                                {error, Reason} -> [{error, Predicate, Reason}]
                            end
                   end, normalize_predicates(Predicates))}.
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
 
 %% @spec validate_predicate(Predicate, Name, Data) -> true | false | {error, Reason}
 %% @doc Checks a single condition in a rule.
