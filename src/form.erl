@@ -25,6 +25,7 @@
          password/2,
          password/3,
          submit/1,
+         hidden/3,
          validate/2,
          validate_field/3,
          valid_fields/3,
@@ -33,7 +34,7 @@
 
 -record(form, {title, action, fields = [], rules = []}).
 %-record(vform, {form, data, validation_result}).
--record(field, {name, type, title, rules = []}).
+-record(field, {name, type, title, value, rules = []}).
 
 %%====================================================================
 %% API
@@ -59,6 +60,9 @@ password(Title, Name, Rules) ->
 
 submit(Name) ->
     #field{type=submit, title=Name, name=Name}.
+
+hidden(Name, Value, Rules) ->
+    #field{type=hidden, name=Name, value=Value, rules=Rules}.
 
 render(F = #form{}) ->
     render_form(F, []).
@@ -100,7 +104,7 @@ valid_fields(F, Result, Data) ->
                     _ ->
                         []
                 end
-                || {Rule, [{duplication, [Field|Fields]}]} <- form_rules(F),
+                || {Rule, [{duplication, [Field|_Fields]}]} <- form_rules(F),
                    proplists:get_value(Rule, Result) =:= []],
     lists:flatten([Simple, Complex]).
 
@@ -151,6 +155,11 @@ render_field(#field{type=submit, name=Name, title=Title}, _ValidFields) ->
                            {description, "Submit button: " ++ Name},
                            {name, Name},
                            {value, Title}]);
+render_field(#field{type=hidden, name=Name, value=Value}, _ValidFields) ->
+    field_template:render([{type, "hidden"},
+                           {description, ""},
+                           {name, Name},
+                           {value, Value}]);
 render_field(#field{type=Type, name=Name, title=Title}, ValidFields) ->
     case proplists:get_value(Name, ValidFields) of
         undefined ->
