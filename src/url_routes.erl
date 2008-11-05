@@ -91,9 +91,11 @@ generate(Controller, Vars, Routes) ->
 generate(BaseUrl, Controller, Vars, Routes) ->
     case lists:keysearch(Controller, 2, Routes) of
         {value, {MatchSpecs, _Controler, _Options}} when is_list(BaseUrl) ->
-            string:join([BaseUrl | generate_path(Vars, hd(MatchSpecs))], "/");
+            MS = best_match(MatchSpecs, Vars),
+            string:join([BaseUrl | generate_path(Vars, MS)], "/");
         {value, {MatchSpecs, _Controler, _Options}} when BaseUrl =:= none ->
-            string:join(generate_path(Vars, hd(MatchSpecs)), "/");
+            MS = best_match(MatchSpecs, Vars),
+            string:join(generate_path(Vars, MS), "/");
         false ->
             erlang:error({no_route, Controller})
     end.
@@ -112,6 +114,80 @@ generate_path(Vars, [String|Rest]) when is_list(String) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+best_match([], _Vars) -> erlang:error(no_possible_matches);
+%% Only one possible choice, choose it even if we don't have enough
+%% required variables - variable expansion will turn this into an
+%% error.
+best_match([MatchSpec], _Vars) -> MatchSpec;
+best_match(MatchSpecs, Vars) ->
+    [First | Rest] = annotate_matchspecs(MatchSpecs, Vars),    
+    {_,MS} = lists:foldl(fun pick_best_match/2, First, Rest),
+    MS.
+
+pick_best_match(New = {NewScore, _MS},
+                {CurrentScore, _MS2}) when NewScore > CurrentScore ->
+    New;
+pick_best_match(_, Current) -> Current.
+
+annotate_matchspecs(MatchSpecs, Vars) ->
+    %% Get the list of supplied variable keys
+    Keys = [Key || {Key,_V} <- Vars],
+    NumKeys = length(Keys),
+    %% Calculate a score for each mspec,
+    %% prefer having all required keys supplied,
+    %% then number of required keys supplied,
+    %% then number of optional keys supplied.
+    lists:map(fun(MS) ->
+                      {Req, Opt} = ms_vars(MS),
+                      NumReqKeys = NumKeys - length(Keys -- Req),
+                      NumOptKeys = NumKeys - length(Keys -- Opt),
+                      {{NumReqKeys =:= length(Req),NumReqKeys,NumOptKeys},
+                           MS}
+              end, MatchSpecs).
+
+%% @doc Find all the required and optional variables for a matchspec.    
+ms_vars(MatchSpec) ->
+    lists:foldl(fun ms_vars/2,
+                {[],[]},
+                MatchSpec).
+
+ms_vars('*', Acc) -> Acc;
+ms_vars(Atom, {Req, Opt}) when is_atom(Atom) ->
+    {[Atom | Req], Opt};
+ms_vars({'*', Var}, {Req, Opt}) ->
+    {Req, [Var | Opt]};
+ms_vars(_Other, Acc) -> Acc.
+
+%%====================================================================
+%% Unit Tests
+%%====================================================================
+
+best_match_test() ->
+    ?assertMatch(["foo", bar, "baz", bobo,{'*',opt}],
+                 best_match([ ["foo", bar, "baz", bobo,{'*',opt}],
+                              ["foo", "bar"],
+                              ["foo", bar, "baz"],
+                              ["foo", bar, "baz", bobo],
+                              ["zombies", ate, "my", baby]
+                             ],
+                            [{bar, "bar"},{bobo,"bobo"}, {opt, "opt"}])).
+
+best_match_2_test() ->
+    ?assertMatch(["test3", {'*', post_path}],
+                 best_match([ ["test"],
+                              ["test2", '*'],
+                              ["test3", {'*', post_path}] ],
+                            [{post_path, "foo"}])).
+
+ms_vars_test() ->
+    ?assertMatch({[test],["baz"]},
+                 ms_vars(["foo", test, "bar", {'*', "baz"}])),
+    ?assertMatch({[test],[]},
+                 ms_vars(["foo", test, "bar"])),
+    ?assertMatch({[],[]},
+                 ms_vars(["foo", "bar"])).
+
 
 route_1_test() ->
     ?assertMatch({test_web_account, [], []},
@@ -158,8 +234,13 @@ generate_11_test() ->
 
 generate_12_test() ->
     ?assertMatch("http://localhost:8000/test",
-                 generate("http://localhost:8000",test_web_account,[], test_routes())).
+                 test_generate("http://localhost:8000",test_web_account,[])).
 
+generate_13_test() ->
+    ?assertMatch("http://localhost:8000/test3/foo/bar",
+                 test_generate("http://localhost:8000",test_web_account,
+                               [{post_path, ["foo","bar"]}])).
+    
 
 test_route(Path) ->
     route(Path, test_routes()).
