@@ -31,7 +31,7 @@
 %% A match specification - a list of match terms to compare against
 %% URL path components.
 %%
-%% @type match_term() = string() | '*' | atom() | {'*', Var::term}.
+%% @type match_term() = string() | '*' | 'root' | atom() | {'*', Var::term}.
 %% A term to match against URL path components.
 %%
 %% Strings must match exactly in the same position. Atoms consume one
@@ -39,7 +39,8 @@
 %% Component}. '*' and {'*', Var} consumes the remaining path (zero or
 %% more path components) and can only appear as the last match_term()
 %% in a match_spec(). {'*', Var} produces a variable binding of {Var,
-%% RemainingPathComponents}.
+%% RemainingPathComponents}. The atom 'root' will only match the path ""
+%% and does not produce a binding.
 %%
 %% @type path() = [string(),...].
 %% A list of URL path components. path() == string:tokens(PathString, "/").
@@ -63,6 +64,10 @@ match(_Path, []) ->
     not_found;
 match(_Path, {[], _Mod, _Options}) ->
     not_found;
+match([], {[root | _], Mod, Options}) ->
+    {Mod, Options, []};
+match(Path, {[root | Rest], Mod, Options}) ->
+    match(Path, {Rest, Mod, Options});
 match(Path, {[Pattern|Rest], Mod, Options}) ->
     case match_pattern(Path, Pattern, []) of
         {match, Vars} ->
@@ -80,6 +85,8 @@ match_pattern(_Path, ['*'], Vars) ->
 match_pattern(Path, [{'*', Var}], Vars) ->
     {match, [{Var,Path} | Vars]};
 match_pattern([String | Rest], [Var | Pattern], Vars) when is_atom(Var) ->
+    match_pattern(Rest, Pattern, [{Var, String} | Vars]);
+match_pattern([String | Rest], [{String, Var} | Pattern], Vars) when is_list(String) ->
     match_pattern(Rest, Pattern, [{Var, String} | Vars]);
 
 match_pattern(_Path, _Pattern, _Vars) ->
@@ -241,6 +248,9 @@ generate_13_test() ->
                  test_generate("http://localhost:8000",test_web_account,
                                [{post_path, ["foo","bar"]}])).
     
+route_14_test() ->
+    ?assertMatch({test_static_var, [], [{suffix, ["test"]},{prefix, "static"}]},
+                 test_route(["static", "test"])).
 
 test_route(Path) ->
     route(Path, test_routes()).
@@ -259,6 +269,7 @@ test_routes() ->
      {[["get_setup"]], test_web_setup, []},
      {[["login"]], test_web_login, []},
      {[["post_path", {'*', post_path}]], test_post_path, []},
+     {[[{"static", prefix}, {'*', suffix}]], test_static_var, []},
      {[[], ["welcome"]], page, [{name, "welcome"}]}
     ].
 
