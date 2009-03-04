@@ -25,7 +25,7 @@
          password/2,
          password/3,
          submit/1,
-         hidden/3,
+         hidden/2,
          validate/2,
          validate_field/3,
          valid_fields/3,
@@ -61,8 +61,8 @@ password(Title, Name, Rules) ->
 submit(Name) ->
     #field{type=submit, title=Name, name=Name}.
 
-hidden(Name, Value, Rules) ->
-    #field{type=hidden, name=Name, value=Value, rules=Rules}.
+hidden(Name, Rules) ->
+    #field{type=hidden, name=Name, rules=Rules}.
 
 render(F = #form{}) ->
     render_form(F, []).
@@ -155,11 +155,15 @@ render_field(#field{type=submit, name=Name, title=Title}, _ValidFields) ->
                            {description, "Submit button: " ++ Name},
                            {name, Name},
                            {value, Title}]);
-render_field(#field{type=hidden, name=Name, value=Value}, _ValidFields) ->
+render_field(#field{type=hidden, name=Name}, ValidFields) ->
+    V = case proplists:get_value(Name, ValidFields) of
+            undefined -> erlang:error({missing_hidden_field_value, Name});
+            Vl -> Vl
+        end,
     field_template:render([{type, "hidden"},
                            {description, ""},
                            {name, Name},
-                           {value, Value}]);
+                           {value, V}]);
 render_field(#field{type=Type, name=Name, title=Title}, ValidFields) ->
     case proplists:get_value(Name, ValidFields) of
         undefined ->
