@@ -101,6 +101,17 @@ regex_test() ->
                                    [{"p", "foobar"}]
                                   ))).
 
+member_test() ->
+    ?assertMatch(true,
+                 is_valid(validate([{"p", [{member, ["foobar"]}]}],
+                                   [{"p", "foobar"}]
+                                  ))),
+    ?assertMatch(false,
+                 is_valid(validate([{"p", [{member, []}]}],
+                                   [{"p", "foobar"}]
+                                  ))).
+
+
 signup_validation_test() ->
     Post = [{"txtusername",[]},
             {"txtemailaddress",[]},

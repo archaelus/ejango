@@ -114,6 +114,8 @@ validate_predicate_simple({regex, RE}, L) when is_list(L) ->
     end;
 validate_predicate_simple({regex, _RE}, _L) ->
     {error, not_a_string};
+validate_predicate_simple({member, List}, L) ->
+    lists:member(L, List);
 validate_predicate_simple(P, V) -> erlang:error({not_implemented, {P, V}}).
 
 %% @private
@@ -142,4 +144,6 @@ predicate_fields(Name, string) -> [Name];
 predicate_fields(Name, {regex, _}) -> [Name];
 predicate_fields(Name, {predicate, _}) -> [Name];
 predicate_fields(Name, email_address) -> [Name];
-predicate_fields(Name, {length, _}) -> [Name].
+predicate_fields(Name, {length, _}) -> [Name];
+predicate_fields(Name, {member, _}) -> [Name];
+predicate_fields(Name, _) -> erlang:error({unknown_predicate, Name}).
