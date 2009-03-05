@@ -19,15 +19,15 @@
          ,generate/3
          ,generate/4]).
 
-%% @type routes() = [route(),...].
+%% @type routes() = [route()].
 %% A list of routes.
-%% @type route() = {[match_spec(),...], controller(), Options::proplist()}.
+%% @type route() = {[match_spec()], controller(), Options::proplist()}.
 %% A single route specification.
 %%
 %% @type controller() = Module::atom().
 %% A controller module name.
 %%
-%% @type match_spec() = [match_term(),...].
+%% @type match_spec() = [match_term()].
 %% A match specification - a list of match terms to compare against
 %% URL path components.
 %%
@@ -42,7 +42,7 @@
 %% RemainingPathComponents}. The atom 'root' will only match the path ""
 %% and does not produce a binding.
 %%
-%% @type path() = [string(),...].
+%% @type path() = [string()].
 %% A list of URL path components. path() == string:tokens(PathString, "/").
 
 %%====================================================================
