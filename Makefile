@@ -6,14 +6,17 @@ APP          := ejango
 TEMPLATES    := $(wildcard src/*.dtl)
 TEMPLATE_OBJS := $(TEMPLATES:src/%.dtl=ebin/$(APP)/%.beam)
 
-all: erl ebin/$(APP).app $(TEMPLATE_OBJS)
+all: erl ebin/$(APP).app $(TEMPLATE_OBJS) docs
 
-erl: ebin/$(APP) lib lib/eunit
+erl: ebin/$(APP) lib $(wildcard src/ejango/*.erl)
 	@$(ERL) -pa $(EBIN_DIRS) -noinput +B \
 	  -eval 'case make:all() of up_to_date -> halt(0); error -> halt(1) end.'
 
-docs:
-	@erl -noshell -run edoc_run application '$(APP)' '"."' '[]'
+docs: doc $(wildcard src/ejango/*.erl)
+	@erl -noshell -run edoc_run application '$(APP)' '"."' "[{subpackages, true}, {def, [{vsn, \"$(VSN)\"}]}]"
+
+doc:
+	@mkdir doc
 
 clean: 
 	@echo "removing:"
@@ -35,11 +38,6 @@ ebin/$(APP)/%.beam: src/%.dtl
 
 lib:
 	@mkdir lib
-
-lib/eunit:
-	@echo "You need to symlink eunit to your lib directory before we can compile."
-	@echo "'ln -s Path/To/eunit lib/eunit' before we can compile."
-	@false
 
 dialyzer: erl
 	@dialyzer -c ebin
