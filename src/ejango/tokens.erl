@@ -11,7 +11,6 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -import(crypto).
--import(mochihex).
 -import(lists).
 
 %% API
@@ -22,7 +21,14 @@
 %%====================================================================
 
 id() ->
-    mochihex:to_hex(crypto:rand_bytes(20)).
+   to_hex(crypto:rand_bytes(20)).
+
+to_hex(Bin) when is_binary(Bin) ->
+    [lower_case(hd(erlang:integer_to_list(Nibble,16)))
+     || <<Nibble:4>> <= Bin].
+
+lower_case(C) when $A =< C, C =< $F -> C - $A + $a;
+lower_case(C) -> C.
 
 %%====================================================================
 %% Internal functions
