@@ -20,7 +20,7 @@ clean:
 	@rm -fv `find ebin -type f -iname \*.beam` ebin/$(APP).app
 
 ebin/$(APP).app: src/$(APP).app
-	@cp -v src/$(APP).app $@
+	@cp src/$(APP).app $@
 
 ebin:
 	@mkdir ebin
