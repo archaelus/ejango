@@ -8,7 +8,7 @@
 -module(ejango.tokens).
 
 -import(eunit).
--include_lib("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 -import(crypto).
 -import(mochihex).

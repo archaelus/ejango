@@ -8,7 +8,7 @@ TEMPLATE_OBJS := $(TEMPLATES:src/%.dtl=ebin/$(APP)/%.beam)
 
 all: erl ebin/$(APP).app $(TEMPLATE_OBJS)
 
-erl: ebin/$(APP) lib lib/eunit
+erl: ebin/$(APP) lib
 	@$(ERL) -pa $(EBIN_DIRS) -noinput +B \
 	  -eval 'case make:all() of up_to_date -> halt(0); error -> halt(1) end.'
 
@@ -35,11 +35,6 @@ ebin/$(APP)/%.beam: src/%.dtl
 
 lib:
 	@mkdir lib
-
-lib/eunit:
-	@echo "You need to symlink eunit to your lib directory before we can compile."
-	@echo "'ln -s Path/To/eunit lib/eunit' before we can compile."
-	@false
 
 dialyzer: erl
 	@dialyzer -c ebin

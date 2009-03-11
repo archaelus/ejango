@@ -9,7 +9,7 @@
 -module(ejango.email_tokens).
 
 -import(eunit).
--include_lib("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -import(calendar).
 -import(crypto).
 -import(mnesia).

@@ -8,7 +8,7 @@
 -module(ejango.form_validator_tests).
 
 -import(eunit).
--include_lib("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -import(lists).
 
 -import(ejango.form_validator, [is_valid/1, validate/2]).
