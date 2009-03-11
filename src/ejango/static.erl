@@ -49,19 +49,19 @@ serve_compressed(Req, RelPath, DocRoot) ->
 serve_compressed2(Req, SafeRelPath, DocRoot) ->
     case have_compressed(DocRoot, SafeRelPath) of
         {regular, Regular} ->
-            ?INFO("Serving regular file ~p.", [Regular]),
+            %%?INFO("Serving regular file ~p.", [Regular]),
             Req:serve_file(Regular, DocRoot, [{"Expires", far_future()}]);
         {gzip, Gzipped, Regular} ->
             case can_gzip(Req) of
                 true ->
-                    ?INFO("Serving gzipped file instead ~p", [Gzipped]),
+                    %%?INFO("Serving gzipped file instead ~p", [Gzipped]),
                     Req:serve_file(Gzipped, DocRoot,
                                    [{"Content-Encoding", "gzip"},
                                     {"Content-Type",
                                      mochiweb_util:guess_mime(filename:join([DocRoot, SafeRelPath]))},
                                     {"Expires", far_future()}]);
                 false ->
-                    ?INFO("Serving regular file ~p.", [Regular]),
+                    %%?INFO("Serving regular file ~p.", [Regular]),
                     Req:serve_file(Regular, DocRoot, [{"Expires", far_future()}])
             end
     end.
