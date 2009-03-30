@@ -143,7 +143,7 @@ compress_file(File, Compressor, Extension, Verb)
   when is_list(File), is_function(Compressor, 2),
        is_list(Extension), is_list(Verb) ->
     case maybe_compress(File, Extension) of
-        {compress, CName} ->
+        {Tag, CName} when Tag =:= compress; Tag =:= recompress ->
             %%?INFO("Trying to compress ~p as ~p", [File, CName]),
             {ok, Bin} = file:read_file(File),
             CBin = Compressor(File, Bin),
@@ -169,6 +169,7 @@ maybe_compress(File, Extension) ->
     case {filelib:is_regular(CName), filename:extension(File)} of
         {_, Extension} -> skip;
         {false, _} -> {compress, CName};
+        {true, _} -> {recompress, CName};
         _ -> skip
     end.
 
