@@ -127,8 +127,8 @@ yui_compress(File) ->
 
 yui_compress(Args, File) ->
     Cmd = "java -jar " ++
-        priv_dir() ++
-        "bin/yuicompressor-2.4.2.jar " ++ Args ++ " " ++ File,
+        filename:join(priv_dir(), "bin/yuicompressor-2.4.2.jar") ++
+        " " ++ Args ++ " " ++ File,
     %%?INFO("Running ~p", [Cmd]),
     os:cmd(Cmd).
 
