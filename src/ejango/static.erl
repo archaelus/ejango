@@ -96,10 +96,17 @@ can_gzip(Req) ->
     lists:member("gzip", Encodings).
 
 compress_docroot(DocRoot) ->
+    ok = ensure_java(),
     filelib:fold_files(DocRoot,
                        ".*", true,
                        fun compress_static_file/2,
                        undefined).
+
+ensure_java() ->
+    case os:cmd("which java") of
+        [] -> erlang:error(missing_java_runtime);
+        Path when is_list(Path) -> ok
+    end.
 
 compress_static_file(File, undefined) ->
     %%?INFO("Examining ~p", [File]),
