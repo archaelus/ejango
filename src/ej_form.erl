@@ -5,14 +5,9 @@
 %% @doc Form generation, validation and processing library
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.form).
+-module(ej_form).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(lists).
--import(proplists).
--import(string).
 
 %% API
 -export([create/4,

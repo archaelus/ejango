@@ -5,15 +5,9 @@
 %% @doc HTML Form validation functions
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.form_validator).
+-module(ej_form_validator).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(lists).
--import(proplists).
--import(error_logger).
--import(rvre).
 
 %% API
 -export([validate/2

@@ -1,15 +1,15 @@
 {application, ejango,
  [{description, "Erlang Django web framework and utilities"},
-  {vsn, "0.1"},
+  {vsn, "0.2"},
   {applications, [kernel, stdlib, crypto, erlydtl]},
-  {modules, [ ejango.domain
-             ,ejango.email_address
-             ,ejango.email_tokens
-             ,ejango.form
-             ,ejango.form_validator
-             ,ejango.passwords
-             ,ejango.tokens
-             ,ejango.url_routes
-             ,ejango.wm_dispatch
+  {modules, [ ej_domain
+             ,ej_email_address
+             ,ej_email_tokens
+             ,ej_form
+             ,ej_form_validator
+             ,ej_passwords
+             ,ej_static
+             ,ej_tokens
+             ,ej_url_routes
              ]}
  ]}.

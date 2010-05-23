@@ -5,12 +5,9 @@
 %% @doc Salted, hashed passwords
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.passwords).
+-module(ej_passwords).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(crypto).
 
 %% API
 -export([new/1,

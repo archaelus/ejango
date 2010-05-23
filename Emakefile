@@ -1,1 +1,1 @@
-{"src/ejango/*", [{outdir, "ebin/ejango"},{i,"include"},debug_info]}.
+{"src/*", [{outdir, "ebin"},{i,"include"},debug_info]}.

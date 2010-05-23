@@ -6,17 +6,9 @@
 %% email tokens
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.email_tokens).
+-module(ej_email_tokens).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
--import(calendar).
--import(crypto).
--import(mnesia).
--import(lists).
--import(httpd_util).
--import(string).
--import(ejango.tokens).
 
 %% API
 -export([create_token/1,
@@ -146,14 +138,14 @@ consume(mnesia, {TokenID, Period}) ->
 %% @doc Creates a new unique token id - ascii hex of sha1({node,self,ref,now}).
 %% @end
 token_id() ->
-    tokens:id().
+    ej_tokens:id().
     
 %% @spec field_validation(token) -> list()
 %% @doc returns the ejango.form_validator validation predicates for
 %%      token values.
 %% @end
 field_validation(token) ->
-    [{regex, "^[a-f0-9]{40}$"}].
+    [{regex, "^[a-f0-9]{40}\$"}].
 
 %%====================================================================
 %% Unit tests

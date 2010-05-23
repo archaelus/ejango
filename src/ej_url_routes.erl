@@ -5,14 +5,9 @@
 %% @doc URL Routing
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.url_routes).
+-module(ej_url_routes).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(lists).
--import(string).
--import(proplists).
 
 %% API
 -export([route/2

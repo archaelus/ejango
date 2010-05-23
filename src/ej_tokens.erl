@@ -5,13 +5,9 @@
 %% @doc Nonce generation and validation functions.
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.tokens).
+-module(ej_tokens).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(crypto).
--import(lists).
 
 %% API
 -export([id/0]).

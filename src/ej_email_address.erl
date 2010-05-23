@@ -5,12 +5,9 @@
 %% @doc Email address utility functions
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.email_address).
+-module(ej_email_address).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
-
--import(lists).
 
 %% API
 -export([is_valid/1,
@@ -45,7 +42,7 @@ is_valid_email_address(User, Host) ->
     end.
 
 is_valid_email_host(Host) ->
-    case domain:sanitise(Host) of 
+    case ej_domain:sanitise(Host) of 
         H when H =:= Host -> true;
         _ -> {error, bad_host_name}
     end.

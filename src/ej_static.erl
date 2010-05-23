@@ -5,7 +5,7 @@
 %% @doc Static file compression and serving for mochiweb.
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.static).
+-module(ej_static).
 
 %% API
 -export([compress_docroot/1
@@ -17,19 +17,6 @@
 -define(INFO(Format, Args),
         error_logger:info_msg("(~p ~p:~p) " ++ Format,
                               [self(), ?MODULE, ?LINE | Args])).
-
--import(mochiweb_util).
--import(filename).
--import(filelib).
--import(zlib).
--import(string).
--import(lists).
--import(error_logger).
--import(calendar).
--import(httpd_util).
--import(file).
--import(os).
--import(code).
 
 %%====================================================================
 %% API

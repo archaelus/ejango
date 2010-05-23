@@ -5,13 +5,12 @@
 %% @doc EUnit tests for HTML Form validation functions
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.form_validator_tests).
+-module(ej_form_validator_tests).
 
--import(eunit).
 -include_lib("eunit/include/eunit.hrl").
--import(lists).
 
--import(ejango.form_validator, [is_valid/1, validate/2]).
+-import(ej_form_validator, [is_valid/1, validate/2, valid_fields/2
+                            ,rule_fields/1]).
 
 not_empty_test() ->
     ?assertMatch(false, 
@@ -136,12 +135,12 @@ valid_fields_test() ->
              "foo@bar.com"}],
     VResult = [{"txtusername", []},
                {"missingfield", []}],
-    Valid = form_validator:valid_fields(VResult, Data),
+    Valid = valid_fields(VResult, Data),
     ?assert(lists:member([], Valid) =:= false),
     ?assertMatch([{"txtusername", "Foobar"}], Valid).
     
 rule_fields_test() ->
     ?assertMatch([a, b, c],
-                 form_validator:rule_fields({a, [not_empty,
-                                                 string,
-                                                 {duplication, [b, c]}]})).
+                 rule_fields({a, [not_empty,
+                                  string,
+                                  {duplication, [b, c]}]})).

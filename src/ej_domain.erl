@@ -5,9 +5,7 @@
 %% @doc DNS name utility functions
 %% @end
 %%%-------------------------------------------------------------------
--module(ejango.domain).
-
--import(lists).
+-module(ej_domain).
 
 %% API
 -export([sanitise/1]).
