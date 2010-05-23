@@ -140,13 +140,13 @@ validate_predicate_simple({length, [_Min,_Max]}, _L) -> false;
 validate_predicate_simple({predicate, P}, L) -> P(L);
 validate_predicate_simple({not_predicate, P}, L) -> P(L) =:= false;
 validate_predicate_simple(email_address, L) when is_list(L) ->
-    email_address:validate(L);
+    ej_email_address:validate(L);
 validate_predicate_simple(email_address, undefined) -> false;
 validate_predicate_simple({regex, RE}, L) when is_list(L) ->
-    case rvre:match(L, RE) of
+    case re:run(L, RE) of
         nomatch -> false;
         {match, _} -> true;
-        {error, R} -> {error, R}
+        match -> true
     end;
 validate_predicate_simple({regex, _RE}, _L) ->
     {error, not_a_string};
